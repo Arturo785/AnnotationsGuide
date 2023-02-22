@@ -21,14 +21,17 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 
 class MainActivity : ComponentActivity() {
 
+    // our api client
     private val api by lazy {
         Retrofit.Builder()
             .baseUrl("https://jsonplaceholder.typicode.com")
             .client(
                 OkHttpClient.Builder()
-                    .addInterceptor(AuthInterceptor())
-                    .addInterceptor(HttpLoggingInterceptor().setLevel(
-                        HttpLoggingInterceptor.Level.BODY)
+                    .addInterceptor(AuthInterceptor()) // this is the one we created
+                    .addInterceptor(
+                        HttpLoggingInterceptor().setLevel(
+                            HttpLoggingInterceptor.Level.BODY
+                        )
                     )
                     .build()
             )
@@ -40,25 +43,33 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleScope.launch {
+            // we call the methods and the getPosts one needs authentication
+            // and gets checked because of the interceptor
             api.getPost()
             api.getUser()
         }
     }
 }
 
+// our data class that makes usage of our annotation of fields
 data class User(
     val name: String,
     @AllowedRegex("\\d{4}-\\d{2}-\\d{2}") val birthDate: String
 ) {
+
     init {
+        // we get the fields from the class
         val fields = this::class.java.declaredFields
+        // we go through every field
         fields.forEach { field ->
             field.annotations.forEach { annotation ->
-                if(field.isAnnotationPresent(AllowedRegex::class.java)) {
+                if (field.isAnnotationPresent(AllowedRegex::class.java)) {
                     val regex = field.getAnnotation(AllowedRegex::class.java)?.regex
-                    if(regex?.toRegex()?.matches(birthDate) == false) {
-                        throw IllegalArgumentException("Birth date is not " +
-                                "a valid date: $birthDate")
+                    if (regex?.toRegex()?.matches(birthDate) == false) {
+                        throw IllegalArgumentException(
+                            "Birth date is not " +
+                                    "a valid date: $birthDate"
+                        )
                     }
                 }
             }
@@ -66,5 +77,16 @@ data class User(
     }
 }
 
+// this annotation only works for Fields
 @Target(AnnotationTarget.FIELD)
 annotation class AllowedRegex(val regex: String)
+
+// we use the validator from our class
+fun validatorsFunction(args: Array<String>) {
+    val item = Item(amount = 1.0f, name = "Bob")
+    val item2 = Item(amount = -1.0f, name = "Bob")
+    val item3 = Item(amount = 5.0f, name = "Mario")
+    val validator = Validator()
+
+    val isValid = validator.isValid(item)
+}
